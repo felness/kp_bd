@@ -3,9 +3,7 @@ package org.spring_boot.cp.bd.project.services.auth;
 
 import lombok.RequiredArgsConstructor;
 import org.spring_boot.cp.bd.project.config.provider.JwtTokenProvider;
-import org.spring_boot.cp.bd.project.controller.auth.authEntity.AuthCredentials;
-import org.spring_boot.cp.bd.project.controller.auth.authEntity.JwtTokenResponse;
-import org.spring_boot.cp.bd.project.controller.auth.authEntity.SIgnUpCredential;
+import org.spring_boot.cp.bd.project.controller.auth.authEntity.*;
 import org.spring_boot.cp.bd.project.entity.customer.Customer;
 import org.spring_boot.cp.bd.project.entity.user.Role;
 import org.spring_boot.cp.bd.project.entity.user.User;
@@ -16,6 +14,8 @@ import org.spring_boot.cp.bd.project.infrastructure.structure.validation.exeptio
 import org.spring_boot.cp.bd.project.infrastructure.structure.validation.exeptions.validation.ValidationExceptionCode;
 import org.spring_boot.cp.bd.project.repository.customer.CustomerRepository;
 import org.spring_boot.cp.bd.project.repository.user.UserRepository;
+import org.spring_boot.cp.bd.project.services.redis.RefreshTokenService;
+import org.spring_boot.cp.bd.project.services.redis.dto.RefreshToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +34,9 @@ public class AuthService {
 
     private final CustomerRepository customerRepository;
 
-    public JwtTokenResponse register(SIgnUpCredential sIgnUpCredential) {
+    private final RefreshTokenService refreshTokenService;
+
+    public AuthToken register(SIgnUpCredential sIgnUpCredential) {
         if (userRepository.findByUsername(sIgnUpCredential.username()).isPresent()) {
             throw new BusinessException(BusinessExceptionCode.USER_ALREADY_EXIST);
         }
@@ -55,12 +57,15 @@ public class AuthService {
 
         String token = jwtTokenProvider.generateToken(sIgnUpCredential.username());
 
-        return new JwtTokenResponse(token);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(sIgnUpCredential.username());
+
+        refreshTokenService.createRefreshToken(sIgnUpCredential.username(), refreshToken);
+        return new AuthToken(token, refreshToken);
 
 
     }
 
-    public JwtTokenResponse auth(AuthCredentials authCredentials) {
+    public AuthToken auth(AuthCredentials authCredentials) {
         User user = userRepository.findByUsername(authCredentials.username())
                 .orElseThrow(() -> new BusinessException(BusinessExceptionCode.USER_NOT_FOUND));
 
@@ -69,9 +74,35 @@ public class AuthService {
             throw new ValidationException(ValidationExceptionCode.ACCESS_DENIED);
         }
 
-        String token = jwtTokenProvider.generateToken(user.getUsername());
+        var token  = jwtTokenProvider.generateToken(authCredentials.username());
 
-        return new JwtTokenResponse(token);
+        String stringToken = jwtTokenProvider.generateRefreshToken(authCredentials.username());
+
+        refreshTokenService.createRefreshToken(authCredentials.username(), stringToken);
+
+        return new AuthToken(token, stringToken);
+    }
+
+    public AuthToken refresh(RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+        if (!refreshTokenService.validateRefreshToken(refreshToken)) {
+            throw new ValidationException(ValidationExceptionCode.INVALID_REFRESH_TOKEN);
+        }
+
+        RefreshToken storedToken = refreshTokenService.findByToken(refreshToken);
+        if (storedToken == null) {
+            throw new ValidationException(ValidationExceptionCode.INVALID_REFRESH_TOKEN);
+        }
+
+        // Удаляем старый refresh токен
+        refreshTokenService.deleteByToken(refreshToken);
+
+        // Генерируем новые токены
+        String newAccessToken = jwtTokenProvider.generateToken(storedToken.getUsername());
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(storedToken.getUsername());
+        refreshTokenService.createRefreshToken(storedToken.getUsername(), newRefreshToken);
+
+        return new AuthToken(newAccessToken, newRefreshToken);
     }
 
 }

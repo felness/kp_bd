@@ -12,7 +12,7 @@ public class DataBaseBackUp {
 
     public int backupDatabase(String username, String dbName, String outputPath) {
         String backupCommand = String.format(
-                "\"C:/Program Files/PostgreSQL/17/bin/pg_dump\" -U %s -d %s -p 5433 -F c -f %s",
+                "\"C:/Program Files/PostgreSQL/17/bin/pg_dump\" -U %s -d %s -p 6432 -F c -f %s",
                 username, dbName, outputPath
         );
 
@@ -20,7 +20,7 @@ public class DataBaseBackUp {
 
         // Убедитесь, что pg_dump доступен в вашем PATH
         ProcessBuilder processBuilder = new ProcessBuilder(backupCommand.split(" "));
-        processBuilder.environment().put("PGPASSWORD", "password"); // тут пароль от базы данных
+        processBuilder.environment().put("PGPASSWORD", "secret"); // тут пароль от базы данных
 
         try {
             Process process = processBuilder.start();

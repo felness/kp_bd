@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
@@ -42,6 +43,10 @@ public class JwtTokenProvider {
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    public String generateRefreshToken(String username) {
+        return UUID.randomUUID().toString();
     }
 
 }

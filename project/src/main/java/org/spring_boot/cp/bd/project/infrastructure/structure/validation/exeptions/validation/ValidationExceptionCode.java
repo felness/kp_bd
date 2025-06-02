@@ -2,6 +2,7 @@ package org.spring_boot.cp.bd.project.infrastructure.structure.validation.exepti
 
 public enum ValidationExceptionCode {
     ACCESS_DENIED("Доступ запрещен"),
+    INVALID_REFRESH_TOKEN("Токен невалиден")
     ;
     final String value;
 
