@@ -17,6 +17,7 @@ const BookingForm = ({ userId }) => {
     });
     const [customer_id, setCustomerId] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [message, setMessage] = useState("");
 
     useEffect(() => {
         const fetchCustomerAndData = async () => {
@@ -97,13 +98,13 @@ const BookingForm = ({ userId }) => {
             const response = await createBooking(bookingData); // Вызываем функцию
 
             if (response.message) {
-                alert(response.message); // Сообщение об успешном создании
+                setMessage(response.message);
             } else {
-                alert("Неизвестный ответ сервера. Проверьте данные."); // Если вдруг нет message
+                setMessage("Неизвестный ответ сервера. Проверьте данные.");
             }
         } catch (error) {
             console.error("Ошибка при создании бронирования:", error.message);
-            alert(`Ошибка: ${error.message}`); // Выводим сообщение об ошибке из сервера
+            setMessage(`Ошибка: ${error.message}`);
         }
     };
 
@@ -112,79 +113,92 @@ const BookingForm = ({ userId }) => {
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <div>
-                <label htmlFor="carId">Выберите машину:</label>
-                <select
-                    id="carId"
-                    name="carId"
-                    value={formData.carId}
-                    onChange={handleChange}
+        <div style={{ padding: '20px' }}>
+            <h2 style={{ marginBottom: '20px' }}>Форма бронирования</h2>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label>Выберите автомобиль:</label>
+                    <select
+                        value={formData.carId}
+                        onChange={handleChange}
+                        name="carId"
+                        required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                    >
+                        <option value="">Выберите автомобиль</option>
+                        {options.cars.map((car) => (
+                            <option key={car.id} value={car.id}>
+                                {car.model} (вместимость: {car.capacity})
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label>Выберите станцию:</label>
+                    <select
+                        value={formData.stationId}
+                        onChange={handleChange}
+                        name="stationId"
+                        required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                    >
+                        <option value="">Выберите станцию</option>
+                        {options.stations.map((station) => (
+                            <option key={station.id} value={station.id}>
+                                {station.name} ({station.location})
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label>Выберите водителя:</label>
+                    <select
+                        value={formData.driverId}
+                        onChange={handleChange}
+                        name="driverId"
+                        required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                    >
+                        <option value="">Выберите водителя</option>
+                        {options.drivers.map((driver) => (
+                            <option key={driver.id} value={driver.id}>
+                                {driver.fullName}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label>Дата бронирования:</label>
+                    <input
+                        type="date"
+                        value={formData.start_date}
+                        onChange={handleChange}
+                        name="start_date"
+                        required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                    />
+                </div>
+
+                <button 
+                    type="submit"
+                    style={{
+                        padding: '10px',
+                        marginTop: '10px',
+                        backgroundColor: '#646cff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
                 >
-                    <option value="" disabled>
-                        -- Выберите машину --
-                    </option>
-                    {options.cars.map((car) => (
-                        <option key={car.id} value={car.id}>
-                            {car.model} (вместимость: {car.capacity})
-                        </option>
-                    ))}
-                </select>
-            </div>
-
-            <div>
-                <label htmlFor="stationId">Выберите станцию:</label>
-                <select
-                    id="stationId"
-                    name="stationId"
-                    value={formData.stationId}
-                    onChange={handleChange}
-                >
-                    <option value="" disabled>
-                        -- Выберите станцию --
-                    </option>
-                    {options.stations.map((station) => (
-                        <option key={station.id} value={station.id}>
-                            {station.name} ({station.location})
-                        </option>
-                    ))}
-                </select>
-            </div>
-
-            <div>
-                <label htmlFor="driverId">Выберите водителя:</label>
-                <select
-                    id="driverId"
-                    name="driverId"
-                    value={formData.driverId}
-                    onChange={handleChange}
-                >
-                    <option value="" disabled>
-                        -- Выберите водителя --
-                    </option>
-                    {options.drivers.map((driver) => (
-                        <option key={driver.id} value={driver.id}>
-                            {driver.fullName}
-                        </option>
-                    ))}
-                </select>
-            </div>
-
-            <div>
-                <label htmlFor="start_date">Дата бронирования:</label>
-                <input
-                    type="date"
-                    id="start_date"
-                    name="start_date"
-                    value={formData.start_date}
-                    onChange={handleChange}
-                />
-            </div>
-
-            <button type="submit" disabled={loading}>
-                Забронировать
-            </button>
-        </form>
+                    Забронировать
+                </button>
+            </form>
+            {message && <p style={{ marginTop: '15px', color: message.includes('ошибка') ? 'red' : 'green' }}>{message}</p>}
+        </div>
     );
 };
 

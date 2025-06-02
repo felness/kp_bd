@@ -10,13 +10,18 @@ const BackupButton = () => {
         setError(null);
 
         try {
-            const token = localStorage.getItem("token"); // Извлечение токена из localStorage
+            const token = localStorage.getItem("accessToken"); // Используем правильный ключ для токена
+
+            if (!token) {
+                setError("Требуется авторизация");
+                return;
+            }
 
             const response = await fetch(`${API_URL}/backup`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`, // Добавление токена в заголовок
+                    Authorization: `Bearer ${token}`,
                 },
             });
 

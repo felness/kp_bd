@@ -27,15 +27,15 @@ export async function signIn(username, password) {
         throw new Error("Ошибка авторизации: неверное имя пользователя или пароль");
     }
 
-    const { token } = await authResponse.json();
-    return { token };
+    const { accessToken, refreshToken } = await authResponse.json();
+    return { accessToken, refreshToken };
 }
 
-export async function getUserByUsername(username, token) {
+export async function getUserByUsername(username, accessToken) {
     const userResponse = await fetch(`${API_URL}/users/username/${username}`, {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
         },
     });
@@ -49,11 +49,11 @@ export async function getUserByUsername(username, token) {
 
 // Получение списка пользователей
 export async function getUsers() {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("accessToken");
     const response = await fetch(`${API_URL}/users`, {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
         },
     });
@@ -67,11 +67,11 @@ export async function getUsers() {
 
 // Получение списка бронирований по пользователям
 export async function getCustomerBookings() {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("accessToken");
     const response = await fetch(`${API_URL}/cust-bookings`, {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
         },
     });
@@ -131,8 +131,6 @@ export const createBooking = async (bookingData) => {
 
     return response.json(); // Возвращаем успешный ответ
 };
-
-
 
 export async function getCustomer(userId) {
     console.log(userId);

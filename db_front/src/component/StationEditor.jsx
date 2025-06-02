@@ -5,192 +5,294 @@ const StationsEditor = () => {
     const [newStation, setNewStation] = useState({
         name: "",
         location: "",
-        capacity: 0,
-        current_cars: 0,
+        capacity: "0",
+        current_cars: "0",
         manager_name: "",
     });
+    const [editingStation, setEditingStation] = useState(null);
+    const [message, setMessage] = useState("");
     const url = "http://localhost:8080/api/stations";
 
-    // Загрузка списка станций при монтировании компонента
     useEffect(() => {
-        fetch(url)
-            .then((response) => {
-                if (!response.ok) throw new Error("Не удалось загрузить станции");
-                return response.json();
-            })
-            .then((data) => setStations(data))
-            .catch((error) => console.error(error));
+        fetchStations();
     }, []);
 
-    // Обновление поля при редактировании
-    const handleEditChange = (id, field, value) => {
-        // Приводим значения capacity и current_cars к числовому типу
-        if (field === "capacity" || field === "current_cars") {
-            value = parseInt(value, 10); // Преобразуем в число
+    const fetchStations = async () => {
+        try {
+            console.log('Fetching stations from:', url);
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) throw new Error("Не удалось загрузить станции");
+            const data = await response.json();
+            console.log('Received stations:', data);
+            setStations(data);
+        } catch (error) {
+            console.error('Error fetching stations:', error);
+            setMessage("Ошибка при загрузке станций");
         }
-        setStations((prevStations) =>
-            prevStations.map((station) =>
-                station.station_id === id ? { ...station, [field]: value } : station
-            )
-        );
     };
 
-    // Сохранение изменений станции
-    const handleSave = (id) => {
-        const updatedStation = stations.find((station) => station.station_id === id);
-        fetch(`${url}/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedStation),
-        })
-            .then((response) => {
-                if (!response.ok) throw new Error("Не удалось обновить станцию");
-                alert("Станция успешно обновлена!");
-            })
-            .catch((error) => console.error(error));
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const stationPayload = {
+                ...newStation,
+                capacity: parseInt(newStation.capacity, 10),
+                current_cars: parseInt(newStation.current_cars, 10),
+            };
+
+            console.log('Submitting new station:', stationPayload);
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(stationPayload),
+            });
+
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Error response:', errorData);
+                throw new Error(errorData.message || "Не удалось добавить станцию");
+            }
+
+            const data = await response.json();
+            console.log('Received new station data:', data);
+            setStations(prevStations => [...prevStations, data]);
+            setNewStation({
+                name: "",
+                location: "",
+                capacity: "0",
+                current_cars: "0",
+                manager_name: "",
+            });
+            setMessage("Станция успешно добавлена");
+        } catch (error) {
+            console.error('Error adding station:', error);
+            setMessage(`Ошибка при добавлении станции: ${error.message}`);
+        }
     };
 
-    // Удаление станции
-    const handleDelete = (id) => {
-        fetch(`${url}/${id}`, { method: "DELETE" })
-            .then((response) => {
-                if (!response.ok) throw new Error("Не удалось удалить станцию");
-                setStations((prevStations) => prevStations.filter((station) => station.station_id !== id));
-            })
-            .catch((error) => console.error(error));
+    const handleEdit = (station) => {
+        setEditingStation(station);
+        setNewStation({
+            name: station.name,
+            location: station.location,
+            capacity: station.capacity.toString(),
+            current_cars: station.current_cars.toString(),
+            manager_name: station.manager_name,
+        });
     };
 
-    // Добавление новой станции
-    const handleAdd = () => {
-        const stationPayload = {
-            ...newStation,
-            capacity: parseInt(newStation.capacity, 10), // Преобразуем в число
-            current_cars: parseInt(newStation.current_cars, 10), // Преобразуем в число
-        };
-        console.log("Отправляемый JSON:", JSON.stringify(stationPayload)); // Вывод в консоль
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        if (!editingStation) return;
 
-        fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(stationPayload),
-        })
-            .then((response) => {
-                if (!response.ok) throw new Error("Не удалось добавить станцию");
-                return response.json();
-            })
-            .then((data) => {
-                setStations((prevStations) => [...prevStations, data]);
-                setNewStation({
-                    name: "",
-                    location: "",
-                    capacity: 0,
-                    current_cars: 0,
-                    manager_name: "",
-                }); // Сброс формы
-            })
-            .catch((error) => console.error(error));
+        try {
+            const stationPayload = {
+                ...newStation,
+                capacity: parseInt(newStation.capacity, 10),
+                current_cars: parseInt(newStation.current_cars, 10),
+            };
+
+            console.log('Updating station:', editingStation.station_id, stationPayload);
+            const response = await fetch(`${url}/${editingStation.station_id}`, {
+                method: "PUT",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(stationPayload),
+            });
+
+            console.log('Update response status:', response.status);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Error response:', errorData);
+                throw new Error(errorData.message || "Не удалось обновить станцию");
+            }
+
+            await fetchStations();
+            setEditingStation(null);
+            setNewStation({
+                name: "",
+                location: "",
+                capacity: "0",
+                current_cars: "0",
+                manager_name: "",
+            });
+            setMessage("Станция успешно обновлена");
+        } catch (error) {
+            console.error('Error updating station:', error);
+            setMessage(`Ошибка при обновлении станции: ${error.message}`);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Вы уверены, что хотите удалить эту станцию?")) return;
+
+        try {
+            console.log('Deleting station:', id);
+            const response = await fetch(`${url}/${id}`, {
+                method: "DELETE",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('Delete response status:', response.status);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Error response:', errorData);
+                throw new Error(errorData.message || "Не удалось удалить станцию");
+            }
+
+            setStations(prevStations => prevStations.filter(station => station.station_id !== id));
+            setMessage("Станция успешно удалена");
+        } catch (error) {
+            console.error('Error deleting station:', error);
+            setMessage(`Ошибка при удалении станции: ${error.message}`);
+        }
     };
 
     return (
-        <div>
-            <h2>Редактор станций</h2>
-            <div>
-                {stations.map((station) => (
-                    <div
-                        key={station.station_id}
-                        style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}
-                    >
-                        <h3>Станция #{station.station_id}</h3>
-                        <label>
-                            Название:
-                            <input
-                                type="text"
-                                value={station.name}
-                                onChange={(e) => handleEditChange(station.station_id, "name", e.target.value)}
-                            />
-                        </label>
-                        <label>
-                            Локация:
-                            <input
-                                type="text"
-                                value={station.location}
-                                onChange={(e) => handleEditChange(station.station_id, "location", e.target.value)}
-                            />
-                        </label>
-                        <label>
-                            Вместимость:
-                            <input
-                                type="number"
-                                value={station.capacity}
-                                onChange={(e) => handleEditChange(station.station_id, "capacity", e.target.value)}
-                            />
-                        </label>
-                        <label>
-                            Текущие машины:
-                            <input
-                                type="number"
-                                value={station.current_cars}
-                                onChange={(e) => handleEditChange(station.station_id, "current_cars", e.target.value)}
-                            />
-                        </label>
-                        <label>
-                            Менеджер:
-                            <input
-                                type="text"
-                                value={station.manager_name}
-                                onChange={(e) => handleEditChange(station.station_id, "manager_name", e.target.value)}
-                            />
-                        </label>
-                        <button onClick={() => handleSave(station.station_id)}>Сохранить</button>
-                        <button onClick={() => handleDelete(station.station_id)}>Удалить</button>
-                    </div>
-                ))}
-            </div>
-
-            <h3>Добавить новую станцию</h3>
-            <div style={{ border: "1px solid #ccc", padding: "10px" }}>
-                <label>
-                    Название:
+        <div style={{ padding: '20px' }}>
+            <h2 style={{ marginBottom: '20px' }}>Редактор станций</h2>
+            <form onSubmit={editingStation ? handleUpdate : handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label>Название станции:</label>
                     <input
                         type="text"
                         value={newStation.name}
                         onChange={(e) => setNewStation({ ...newStation, name: e.target.value })}
+                        required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
-                </label>
-                <label>
-                    Локация:
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label>Адрес:</label>
                     <input
                         type="text"
                         value={newStation.location}
                         onChange={(e) => setNewStation({ ...newStation, location: e.target.value })}
+                        required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
-                </label>
-                <label>
-                    Вместимость:
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label>Вместимость:</label>
                     <input
                         type="number"
                         value={newStation.capacity}
                         onChange={(e) => setNewStation({ ...newStation, capacity: e.target.value })}
+                        required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
-                </label>
-                <label>
-                    Текущие машины:
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label>Текущее количество автомобилей:</label>
                     <input
                         type="number"
                         value={newStation.current_cars}
                         onChange={(e) => setNewStation({ ...newStation, current_cars: e.target.value })}
+                        required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
-                </label>
-                <label>
-                    Менеджер:
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label>Контактный телефон:</label>
                     <input
-                        type="text"
+                        type="tel"
                         value={newStation.manager_name}
                         onChange={(e) => setNewStation({ ...newStation, manager_name: e.target.value })}
+                        required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
-                </label>
-                <button onClick={handleAdd}>Добавить станцию</button>
+                </div>
+
+                <button 
+                    type="submit"
+                    style={{
+                        padding: '10px',
+                        marginTop: '10px',
+                        backgroundColor: '#646cff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    {editingStation ? 'Обновить' : 'Добавить станцию'}
+                </button>
+            </form>
+
+            <div style={{ marginTop: '30px' }}>
+                <h3 style={{ marginBottom: '15px' }}>Список станций</h3>
+                <div style={{ display: 'grid', gap: '10px' }}>
+                    {stations.map((station) => (
+                        <div 
+                            key={station.station_id}
+                            style={{
+                                padding: '15px',
+                                border: '1px solid #ccc',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }}
+                        >
+                            <div>
+                                <strong>{station.name}</strong>
+                                <p>Адрес: {station.location}</p>
+                                <p>Вместимость: {station.capacity}</p>
+                                <p>Текущее количество: {station.current_cars}</p>
+                                <p>Телефон: {station.manager_name}</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    onClick={() => handleEdit(station)}
+                                    style={{
+                                        padding: '8px',
+                                        backgroundColor: '#646cff',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Редактировать
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(station.station_id)}
+                                    style={{
+                                        padding: '8px',
+                                        backgroundColor: '#ff4d4d',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Удалить
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
+            {message && <p style={{ marginTop: '15px', color: message.includes('ошибка') ? 'red' : 'green' }}>{message}</p>}
         </div>
     );
 };

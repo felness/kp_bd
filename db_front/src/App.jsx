@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, Navigate, useLocation } from "react-router-
 import Register from "./component/Register.jsx";
 import Auth from "./component/Auth.jsx";
 import Dashboard from "./component/Dashboard.jsx";
+import WebSocketNotifications from "./component/WebSocketNotifications.jsx";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -37,6 +38,7 @@ function App() {
 
     return (
         <div>
+            <WebSocketNotifications />
             {location.pathname !== "/dashboard" && (
                 <nav>
                     <button onClick={() => navigate("/register")}>Регистрация</button>

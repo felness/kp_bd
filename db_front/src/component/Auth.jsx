@@ -14,10 +14,11 @@ const Auth = ({ onAuth, setRole, setUserId }) => {
         e.preventDefault();
 
         try {
-            const { token } = await signIn(username, password); // Авторизация
-            localStorage.setItem("token", token);
+            const { accessToken, refreshToken } = await signIn(username, password); // Авторизация
+            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("refreshToken", refreshToken);
 
-            const user = await getUserByUsername(username, token);
+            const user = await getUserByUsername(username, accessToken);
             console.log(user); // Временная отладка
             // Извлекаем необходимые данные из ответа
             const userId = user.user_id; // Или user["userId"], если ключи динамические
@@ -42,30 +43,45 @@ const Auth = ({ onAuth, setRole, setUserId }) => {
     };
 
     return (
-        <div>
-            <h2>Авторизация</h2>
-            <form onSubmit={handleSubmit}>
-                <div>
+        <div style={{ padding: '20px' }}>
+            <h2 style={{ marginBottom: '20px' }}>Авторизация</h2>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label>Имя пользователя:</label>
                     <input
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
                 </div>
-                <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label>Пароль:</label>
                     <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
                 </div>
-                <button type="submit">Войти</button>
+                <button 
+                    type="submit"
+                    style={{
+                        padding: '10px',
+                        marginTop: '10px',
+                        backgroundColor: '#646cff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Войти
+                </button>
             </form>
-            {message && <p>{message}</p>}
+            {message && <p style={{ marginTop: '15px', color: message.includes('ошибка') ? 'red' : 'green' }}>{message}</p>}
         </div>
     );
 };
